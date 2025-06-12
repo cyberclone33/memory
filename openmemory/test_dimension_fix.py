@@ -32,7 +32,7 @@ def test_memory_addition():
             "llm": {
                 "provider": "ollama",
                 "config": {
-                    "model": "llama3.1",
+                    "model": "llama3.1:latest",
                     "temperature": 0.1,
                     "max_tokens": 2000,
                     "ollama_base_url": "http://localhost:11434"

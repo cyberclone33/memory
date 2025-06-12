@@ -83,14 +83,11 @@ async def add_memories(text: str) -> str:
             if not app.is_active:
                 return f"Error: App {app.name} is currently paused on OpenMemory. Cannot create new memories."
 
-            response = memory_client.add(text,
-                                         user_id=uid,
-                                         metadata={
-                                            "source_app": "openmemory",
-                                            "mcp_client": client_name,
-                                        })
+            # Add memory using the memory client
+            response = memory_client.add(text, user_id=uid)
 
             # Process the response and update database
+            logging.info(f"Memory client response: {response}")
             if isinstance(response, dict) and 'results' in response:
                 for result in response['results']:
                     memory_id = uuid.UUID(result['id'])

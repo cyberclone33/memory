@@ -69,13 +69,13 @@ def test_ollama_service():
             models = response.json().get("models", [])
             print("✅ Ollama service is running")
             
-            # Check for llama3.1 model
-            llama_models = [m for m in models if "llama3.1" in m.get("name", "")]
+            # Check for llama3.1:latest model
+            llama_models = [m for m in models if "llama3.1:latest" in m.get("name", "")]
             if llama_models:
-                print("✅ llama3.1 model is available")
+                print("✅ llama3.1:latest model is available")
                 return True
             else:
-                print("❌ llama3.1 model not found")
+                print("❌ llama3.1:latest model not found")
                 print("Available models:")
                 for model in models:
                     print(f"  - {model.get('name', 'Unknown')}")
