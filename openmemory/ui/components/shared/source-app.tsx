@@ -56,6 +56,16 @@ export const constants = {
     icon: <BiEdit size={18} className="ml-1" />,
     iconImage: "/images/default.png",
   },
+  claude_code_cli: {
+    name: "Claude Code CLI",
+    icon: <Icon source="/images/claude.webp" />,
+    iconImage: "/images/claude.webp",
+  },
+  claude_desktop: {
+    name: "Claude Desktop",
+    icon: <Icon source="/images/claude.webp" />,
+    iconImage: "/images/claude.webp",
+  },
 };
 
 const SourceApp = ({ source }: { source: string }) => {
