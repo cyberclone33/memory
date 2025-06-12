@@ -19,8 +19,10 @@ services:
       - "8765:8765"
     volumes:
       - ./api:/usr/src/openmemory
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     command: >
-      sh -c "uvicorn main:app --host 0.0.0.0 --port 8765 --reload --workers 4"
+      sh -c "uvicorn main:app --host 0.0.0.0 --port 8765 --reload"
   openmemory-ui:
     build:
       context: ui/

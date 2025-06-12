@@ -30,12 +30,23 @@ class EmbedderProvider(BaseModel):
     provider: str = Field(..., description="Embedder provider name")
     config: EmbedderConfig
 
+class VectorStoreConfig(BaseModel):
+    collection_name: str = Field(..., description="Collection name for the vector store")
+    host: str = Field(..., description="Vector store host")
+    port: int = Field(..., description="Vector store port")
+    embedding_model_dims: int = Field(..., description="Embedding model dimensions")
+
+class VectorStoreProvider(BaseModel):
+    provider: str = Field(..., description="Vector store provider name")
+    config: VectorStoreConfig
+
 class OpenMemoryConfig(BaseModel):
     custom_instructions: Optional[str] = Field(None, description="Custom instructions for memory management and fact extraction")
 
 class Mem0Config(BaseModel):
     llm: Optional[LLMProvider] = None
     embedder: Optional[EmbedderProvider] = None
+    vector_store: Optional[VectorStoreProvider] = None
 
 class ConfigSchema(BaseModel):
     openmemory: Optional[OpenMemoryConfig] = None
@@ -62,6 +73,15 @@ def get_default_configuration():
                 "config": {
                     "model": "text-embedding-3-small",
                     "api_key": "env:OPENAI_API_KEY"
+                }
+            },
+            "vector_store": {
+                "provider": "qdrant",
+                "config": {
+                    "collection_name": "openmemory",
+                    "host": "mem0_store",
+                    "port": 6333,
+                    "embedding_model_dims": 1536
                 }
             }
         }
@@ -98,6 +118,10 @@ def get_config_from_db(db: Session, key: str = "main"):
         # Ensure embedder config exists with defaults
         if "embedder" not in config_value["mem0"] or config_value["mem0"]["embedder"] is None:
             config_value["mem0"]["embedder"] = default_config["mem0"]["embedder"]
+        
+        # Ensure vector store config exists with defaults
+        if "vector_store" not in config_value["mem0"] or config_value["mem0"]["vector_store"] is None:
+            config_value["mem0"]["vector_store"] = default_config["mem0"]["vector_store"]
     
     # Save the updated config back to database if it was modified
     if config_value != config.value:

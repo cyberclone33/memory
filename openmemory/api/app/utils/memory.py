@@ -127,6 +127,28 @@ def _fix_ollama_urls(config_section):
     return config_section
 
 
+def _fix_qdrant_urls(config_section):
+    """
+    Fix Qdrant URLs for Docker environment.
+    Replaces localhost with Docker service name for Qdrant.
+    """
+    if not config_section or "config" not in config_section:
+        return config_section
+    
+    qdrant_config = config_section["config"]
+    
+    # Check if we're running inside Docker
+    if os.path.exists('/.dockerenv'):
+        # Check for localhost in host setting and fix it
+        if "host" in qdrant_config:
+            host = qdrant_config["host"]
+            if host in ["localhost", "127.0.0.1"]:
+                qdrant_config["host"] = "mem0_store"
+                print(f"Adjusted Qdrant host from {host} to mem0_store for Docker environment")
+    
+    return config_section
+
+
 def reset_memory_client():
     """Reset the global memory client to force reinitialization with new config."""
     global _memory_client, _config_hash
@@ -143,6 +165,7 @@ def get_default_memory_config():
                 "collection_name": "openmemory",
                 "host": "mem0_store",
                 "port": 6333,
+                "embedding_model_dims": 1536
             }
         },
         "llm": {
@@ -206,6 +229,52 @@ def get_memory_client(custom_instructions: str = None):
     global _memory_client, _config_hash
 
     try:
+        # Check if we should use MCP-specific configuration
+        mcp_config_path = os.path.join(os.path.dirname(__file__), '..', '..', 'mcp_config.json')
+        if os.path.exists(mcp_config_path):
+            print("Loading MCP configuration from mcp_config.json")
+            try:
+                with open(mcp_config_path, 'r') as f:
+                    mcp_config = json.load(f)
+                    if "mem0" in mcp_config:
+                        config = mcp_config["mem0"]
+                        print(f"Using MCP configuration: {json.dumps(config, indent=2)}")
+                        
+                        # Fix Ollama URLs for Docker if needed
+                        if config.get("llm", {}).get("provider") == "ollama":
+                            config["llm"] = _fix_ollama_urls(config["llm"])
+                        if config.get("embedder", {}).get("provider") == "ollama":
+                            config["embedder"] = _fix_ollama_urls(config["embedder"])
+                        
+                        # Fix Qdrant URLs for Docker if needed
+                        if config.get("vector_store", {}).get("provider") == "qdrant":
+                            config["vector_store"] = _fix_qdrant_urls(config["vector_store"])
+                        
+                        # Skip database configuration loading
+                        config = _parse_environment_variables(config)
+                        
+                        # Check if config has changed by comparing hashes
+                        current_config_hash = _get_config_hash(config)
+                        
+                        # Only reinitialize if config changed or client doesn't exist
+                        if _memory_client is None or _config_hash != current_config_hash:
+                            print(f"Initializing MCP memory client with config hash: {current_config_hash}")
+                            try:
+                                _memory_client = Memory.from_config(config_dict=config)
+                                _config_hash = current_config_hash
+                                print("MCP Memory client initialized successfully")
+                            except Exception as init_error:
+                                print(f"Warning: Failed to initialize MCP memory client: {init_error}")
+                                print("Server will continue running with limited memory functionality")
+                                _memory_client = None
+                                _config_hash = None
+                                return None
+                        
+                        return _memory_client
+            except Exception as e:
+                print(f"Warning: Error loading MCP configuration: {e}")
+                print("Falling back to default configuration")
+        
         # Start with default configuration
         config = get_default_memory_config()
         
@@ -243,6 +312,14 @@ def get_memory_client(custom_instructions: str = None):
                         # Fix Ollama URLs for Docker if needed
                         if config["embedder"].get("provider") == "ollama":
                             config["embedder"] = _fix_ollama_urls(config["embedder"])
+                    
+                    # Update Vector Store configuration if available
+                    if "vector_store" in mem0_config and mem0_config["vector_store"] is not None:
+                        config["vector_store"] = mem0_config["vector_store"]
+                        
+                        # Fix Qdrant URLs for Docker if needed
+                        if config["vector_store"].get("provider") == "qdrant":
+                            config["vector_store"] = _fix_qdrant_urls(config["vector_store"])
             else:
                 print("No configuration found in database, using defaults")
                     
