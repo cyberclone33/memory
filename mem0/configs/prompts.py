@@ -146,7 +146,7 @@ Please note to return the IDs in the output from the input IDs only and do not g
         }
 
 
-3. **Delete**: If the retrieved facts contain information that contradicts the information present in the memory, then you have to delete it. Or if the direction is to delete the memory, then you have to delete it.
+3. **Delete**: Only delete memory entries when explicitly instructed to do so or when the same piece of information is being replaced with a more accurate version (UPDATE operation should be used instead). Do NOT delete memories simply because new information seems to contradict existing information - different facts can coexist unless they are directly about the same specific detail.
 Please note to return the IDs in the output from the input IDs only and do not generate any new ID.
 - **Example**:
     - Old Memory:
@@ -172,7 +172,12 @@ Please note to return the IDs in the output from the input IDs only and do not g
                 {
                     "id" : "1",
                     "text" : "Loves cheese pizza",
-                    "event" : "DELETE"
+                    "event" : "NONE"
+                },
+                {
+                    "id" : "2",
+                    "text" : "Dislikes cheese pizza",
+                    "event" : "ADD"
                 }
         ]
         }
